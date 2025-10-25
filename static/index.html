@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple File Explorer</title>
+    <link rel="stylesheet" href="./static/style.css">
+</head>
+<body>
+    <div class="wrapper">
+        <img src="./static/images/bg.jpg" alt="background image" class="bg-image">
+    </div>
+    
+    <div class="desktop">
+        {% for f in files %}
+        <div class="file" data-path="{{ f.path }}" data-is-dir="{{ f.is_dir }}">
+            <img class="img" src="./static/images/{{ f.icon }}" alt="">
+            <img class="selected-img" src="./static/images/{{ f.icon_selected }}" alt="">
+            <div class="name-wrapper">
+                <p>{{ f.name }}</p>
+                <div class="counter">(requests: {{ f.count }})</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="window" id="fileWindow" style="display: none;">
+        <div class="tools">
+            <div class="title" id="windowTitle">Window Title</div>
+            <div class="buttons">
+                <div class="download button" id="downloadBtn">↓</div>
+                <div class="close button" id="closeBtn">X</div>
+            </div>
+        </div>
+        <div class="content" id="windowContent"></div>
+    </div>
+    
+    <div class="taskbar">
+        <div class="start" onclick="goParent()">
+            <img src="./static/images/arrow.png" alt="">
+            <p>Parent Folder</p>
+        </div>
+        <div class="current-path" id="currentPath"></div>
+    </div>
+</body>
+<script>
+    const files = document.getElementsByClassName("file");
+    const fileWindow = document.getElementById("fileWindow");
+    const windowContent = document.getElementById("windowContent");
+    const windowTitle = document.getElementById("windowTitle");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const closeBtn = document.getElementById("closeBtn");
+    let currentFilePath = null;
+
+    for (let i = 0; i < files.length; i++) {
+        files[i].addEventListener("click", function(e) {
+            e.stopPropagation();
+            for (let j = 0; j < files.length; j++)
+                files[j].classList.remove("selected");
+            this.classList.add("selected");
+        });
+
+        files[i].addEventListener("dblclick", function(e) {
+            e.stopPropagation();
+            const path = this.getAttribute("data-path");
+            const isDir = this.getAttribute("data-is-dir") === "True";
+            
+            if (isDir) {
+                // Navigate to directory
+                window.location.href = '/' + path;
+            } else {
+                // Open file in window
+                openFileWindow(path);
+            }
+        });
+    }
+
+    const bg = document.getElementsByClassName("desktop")[0];
+    bg.addEventListener("click", function() {
+        for (let j = 0; j < files.length; j++)
+            files[j].classList.remove("selected");
+    });
+
+    function goParent() {
+        const current = window.location.pathname.split("/").slice(0, -1).join("/");
+        window.location.href = current || "/";
+    }
+
+    // Display current path
+    function updateCurrentPath() {
+        const path = window.location.pathname === '/' ? '/' : window.location.pathname;
+        document.getElementById('currentPath').textContent = "Current path: " + path;
+    }
+    
+    updateCurrentPath();
+
+    function openFileWindow(path) {
+        currentFilePath = path;
+        const fileName = path.split('/').pop();
+        const ext = fileName.split('.').pop().toLowerCase();
+        
+        windowTitle.textContent = fileName;
+        windowContent.innerHTML = '';
+        
+        // Display file based on extension
+        if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif') {
+            const img = document.createElement('img');
+            img.src = '/' + path;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100%';
+            img.style.objectFit = 'contain';
+            windowContent.appendChild(img);
+        } else if (ext === 'pdf') {
+            const iframe = document.createElement('iframe');
+            iframe.src = '/' + path;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            windowContent.appendChild(iframe);
+        } else if (ext === 'html' || ext === 'txt') {
+            const iframe = document.createElement('iframe');
+            iframe.src = '/' + path;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            windowContent.appendChild(iframe);
+        }
+        
+        fileWindow.style.display = 'block';
+    }
+
+    closeBtn.addEventListener("click", function() {
+        fileWindow.style.display = 'none';
+        windowContent.innerHTML = '';
+        currentFilePath = null;
+    });
+
+    downloadBtn.addEventListener("click", function() {
+        if (currentFilePath) {
+            window.location.href = '/' + currentFilePath + '?download=true';
+        }
+    });
+</script>
+</html>
